@@ -61,6 +61,11 @@ app.post('/api/admin/events',adminAuth,(req,res)=>{const parsed=eventShape.safeP
 app.patch('/api/admin/events/:id',adminAuth,(req,res)=>{const old=db.prepare('SELECT * FROM events WHERE event_id=?').get(Number(req.params.id));if(!old)return res.status(404).json({error:'Event not found.'});const parsed=eventShape.partial().safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'Invalid event details.'});const d={...old,...parsed.data};db.prepare('UPDATE events SET name=?,date=?,fee=?,capacity=?,description=?,category=? WHERE event_id=?').run(d.name,d.date,d.fee,d.capacity,d.description,d.category,old.event_id);log('event.updated',`Updated event: ${d.name}`);res.json({event:toEvent(db.prepare('SELECT * FROM events WHERE event_id=?').get(old.event_id))});});
 app.get('/api/admin/logs',adminAuth,(req,res)=>res.json({logs:db.prepare('SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 250').all()}));
 app.post('/api/admin/registrations/:id/resend-pass',adminAuth,async(req,res)=>{const reg=db.prepare('SELECT * FROM registrations WHERE reg_id=?').get(req.params.id);if(!reg)return res.status(404).json({error:'Registration not found.'});if(reg.status!=='confirmed')return res.status(409).json({error:'Only confirmed registrations have an entry pass.'});await deliverPass(reg.reg_id);res.json({ok:true,email_sent:!!db.prepare('SELECT email_sent FROM registrations WHERE reg_id=?').get(reg.reg_id).email_sent});});
-if(isProd){const dist=path.resolve(__dirname,'../dist');app.use(express.static(dist));app.get('*',(req,res)=>res.sendFile(path.join(dist,'index.html')));}else{app.get('/',(req,res)=>res.json({service:'Gather API',health:'/api/health'}));}
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Gather API',
+    health: '/api/health'
+  });
+});
 app.use((err,req,res,next)=>{console.error(err);res.status(500).json({error:'Unexpected server error.'});});
 app.listen(port,()=>console.log(`Gather API listening on :${port}`));
