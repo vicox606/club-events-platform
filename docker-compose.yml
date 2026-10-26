@@ -1,0 +1,16 @@
+services:
+  gather:
+    build: .
+    ports:
+      - "4000:4000"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /app/data/events.sqlite
+      CLIENT_ORIGIN: http://localhost:4000
+      PUBLIC_APP_URL: http://localhost:4000
+    volumes:
+      - gather-data:/app/data
+    restart: unless-stopped
+volumes:
+  gather-data:
